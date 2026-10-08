@@ -1,0 +1,4 @@
+ok - a misplaced worker is surfaced once per directory
+ok - an unreadable placement read keeps the report and never wakes again
+ok - positive evidence of recovery, or a new directory, re-arms the report
+# fm-watch-misplaced-worker.test.sh: all assertions passed

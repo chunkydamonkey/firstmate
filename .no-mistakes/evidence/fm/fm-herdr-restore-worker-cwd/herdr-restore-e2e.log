@@ -1,0 +1,6 @@
+ok - a live agent in its worktree is not reported, in either shape
+ok - a pane whose top-level shell is in its worktree is restored and resumed in that worktree
+ok - a Herdr restore resumes a subshell-shaped agent in the main copy the pane was created in
+ok - the resumed agent is reported outside its recorded worktree, naming the main copy
+ok - the doorbell types nothing into the misplaced agent and keeps the record
+ok - the watcher surfaces a misplaced worker once and skips its other checks

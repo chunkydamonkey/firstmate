@@ -1,0 +1,32 @@
+== tmux panes (pane_pid = top-level shell) ==
+primary:bash pid=1672587 cmd=sleep path=/home/chuche/.no-mistakes/worktrees/75691ab7d22e/01M4CWFA4TG8YM5VZ0M225M1QN
+primary:fm-t1 pid=1673353 cmd=sh path=/home/chuche/.treehouse/demo-74ae9e/1/demo
+== top-level shell cwd: readlink /proc/1673353/cwd ==
+/home/chuche/.treehouse/demo-74ae9e/1/demo
+== shell children ==
+    PID CMD
+1676070 sh -c while :; do sleep 60; done
+== state meta ==
+window=primary:fm-t1
+worktree=/home/chuche/.treehouse/demo-74ae9e/1/demo
+project=/tmp/fm-lab.TN7quH/projects/demo
+== treehouse status ==
+
+1     leased       ~/.treehouse/demo-74ae9e/1/demo  (held by fm-task:t1)
+                   bash (1673353), sh (1676070), sleep (1676073)
+== pane screen ==
+cd -- '/home/chuche/.treehouse/demo-74ae9e/1/demo'
+chuche@CHUNKY-LEGION /tmp/fm-lab.TN7quH/projects/demo (master)
+$ cd -- '/home/chuche/.treehouse/demo-74ae9e/1/demo'
+chuche@CHUNKY-LEGION ~/.treehouse/demo-74ae9e/1/demo (381fa0e)
+$ cd -- '/home/chuche/.treehouse/demo-74ae9e/1/demo'
+chuche@CHUNKY-LEGION ~/.treehouse/demo-74ae9e/1/demo (381fa0e)
+$ export GOTMPDIR=/tmp/fm-t1/gotmp
+export COMPACT_ADVISER_DISABLE=1
+export FM_TASK_ID=t1
+chuche@CHUNKY-LEGION ~/.treehouse/demo-74ae9e/1/demo (381fa0e)
+$ export COMPACT_ADVISER_DISABLE=1
+chuche@CHUNKY-LEGION ~/.treehouse/demo-74ae9e/1/demo (381fa0e)
+$ export FM_TASK_ID=t1
+chuche@CHUNKY-LEGION ~/.treehouse/demo-74ae9e/1/demo (381fa0e)
+$ . '/tmp/fm-t1+7a452fd33a238deed82e401e6550ff1f5b32eb0e9f53c948c1f72deb5eca290a/launch.s1791435261.1672593.8189.sh'

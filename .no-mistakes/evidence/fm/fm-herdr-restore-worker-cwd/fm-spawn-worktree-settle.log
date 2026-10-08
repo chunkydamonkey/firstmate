@@ -1,0 +1,8 @@
+ok - a single transient stale pane_current_path read is not accepted as the worktree
+ok - an already-settled pane is accepted after one confirming read of the leased worktree
+ok - a transient primary-checkout pane read is not accepted as the worktree
+ok - a pane stuck on the primary checkout fails loudly at the deadline and returns its lease
+ok - a leased path that is not an isolated worktree is refused and its lease returned
+ok - an aborted spawn moves its pane back to the project before returning the lease
+ok - an aborted spawn whose pane stays in the worktree keeps the lease and names the manual return
+# all fm-spawn-worktree-settle tests passed

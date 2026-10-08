@@ -1,0 +1,25 @@
+== teardown output ==
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /tmp/fm-lab.TN7quH
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+A new version of treehouse is available: v2.3.0 → v3.1.2
+Run "treehouse update" to update
+
+🌳 Worktree returned to pool.
+demo: skipped: no origin remote
+teardown t1 complete (window primary:fm-t1, worktree /home/chuche/.treehouse/demo-74ae9e/1/demo)
+Backlog: t1 just finished (this home keeps no markdown backlog at /tmp/fm-lab.TN7quH/data/backlog.md). Update /tmp/fm-lab.TN7quH/data/backlog.md - move t1 to Done, keep Done to the 10 most recent, then re-scan Queued and dispatch only work whose blockers are gone and date is due.
+rc=0
+== windows after ==
+bash
+td
+== treehouse status after ==
+
+1     available    ~/.treehouse/demo-74ae9e/1/demo
+== meta present? ==
+ls: cannot access '/tmp/fm-lab.TN7quH/state/t1.meta': No such file or directory
