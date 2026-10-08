@@ -503,16 +503,20 @@ window_key() {  # <window>
 # restore resumes one in the project directory the pane was created in - must
 # not be driven from here, so this runs before the inbox ring. It is surfaced
 # once per directory it is seen in; .misplaced-<key> remembers that directory
-# and is cleared as soon as the agent is no longer seen outside. Returns 0 when
-# the window is misplaced so the caller skips its other checks this poll.
+# and is cleared only on positive evidence that the agent is no longer outside,
+# never on an unreadable read. Returns 0 when the window is misplaced so the
+# caller skips its other checks this poll.
 misplaced_worker_check() {  # <window> <task>
-  local w=$1 task=$2 key meta dir reason
+  local w=$1 task=$2 key meta dir reason rc=0
   key=$(window_key "$w")
   meta="$STATE/$task.meta"
-  if [ ! -f "$meta" ] || ! dir=$(fm_backend_task_outside_worktree "$meta"); then
-    rm -f "$STATE/.misplaced-$key"
-    return 1
-  fi
+  [ -f "$meta" ] || return 1
+  dir=$(fm_backend_task_outside_worktree "$meta") || rc=$?
+  case "$rc" in
+    0) ;;
+    1) rm -f "$STATE/.misplaced-$key"; return 1 ;;
+    *) return 1 ;;
+  esac
   [ "$(cat "$STATE/.misplaced-$key" 2>/dev/null)" != "$dir" ] || return 0
   reason="stale: $w (worker agent runs in $dir, outside its recorded worktree $(fm_meta_get "$meta" worktree), as a Herdr session restore leaves it; no doorbell is typed into it; stop it and recover the worker)"
   fm_wake_append stale "$w" "$reason" || exit 1

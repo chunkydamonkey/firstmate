@@ -3076,17 +3076,23 @@ fm_backend_herdr_current_path() {  # <target>
 
 # fm_backend_herdr_outside_worktree: print the pane's foreground directory and
 # return 0 only when it is neither <worktree> nor beneath it AND a live agent
-# holds the pane. A shell with no agent, an unreadable directory, or an
-# unreadable agent state returns 1: only a positively placed agent counts.
+# holds the pane. Returns 1 on positive evidence that no agent runs outside:
+# the directory is inside the worktree, or the agent reads dead or missing.
+# Returns 2 when the directory or the agent state cannot be read, which proves
+# neither.
 fm_backend_herdr_outside_worktree() {  # <target> <worktree>
   local cwd here wt
+  [ -n "$2" ] || return 2
   cwd=$(fm_backend_herdr_current_path "$1")
-  [ -n "$cwd" ] && [ -n "$2" ] || return 1
+  [ -n "$cwd" ] || return 2
   here=$(CDPATH='' cd -- "$cwd" 2>/dev/null && pwd -P) || here=$cwd
   wt=$(CDPATH='' cd -- "$2" 2>/dev/null && pwd -P) || wt=$2
   case "$here/" in "${wt%/}"/*) return 1 ;; esac
-  [ "$(fm_backend_herdr_agent_state "$1" 2>/dev/null)" = alive ] || return 1
-  printf '%s' "$cwd"
+  case "$(fm_backend_herdr_agent_state "$1" 2>/dev/null)" in
+    alive) printf '%s' "$cwd" ;;
+    dead|missing) return 1 ;;
+    *) return 2 ;;
+  esac
 }
 
 # fm_backend_herdr_send_text_line: send one line of TEXT then submit,

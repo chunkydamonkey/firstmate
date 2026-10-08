@@ -1685,20 +1685,35 @@ EOF
 # Recorded 2026-10-05 on Claude Code 2.1.285 in a restored worker pane: the
 # external CLAUDE.md imports dialog, whose selected row is either option
 # because Enter and Escape both record a decision for the project.
+FM_COMPOSER_DIALOG_EXIT_PICKER='Claude background-task exit picker'
+FM_COMPOSER_DIALOG_IMPORTS='Claude external CLAUDE.md imports dialog'
 fm_composer_blocking_dialog() {  # <screen> -> dialog name
   local screen=${1-}
   [ -n "$screen" ] || return 1
   if fm_composer_dialog_shape "$screen" 'Background work is running' \
        '1[.] Exit and stop tasks'; then
-    printf '%s' 'Claude background-task exit picker'
+    printf '%s' "$FM_COMPOSER_DIALOG_EXIT_PICKER"
     return 0
   fi
   if fm_composer_dialog_shape "$screen" 'Allow external CLAUDE[.]md file imports[?]' \
        '(No, disable|Yes, allow) external imports'; then
-    printf '%s' 'Claude external CLAUDE.md imports dialog'
+    printf '%s' "$FM_COMPOSER_DIALOG_IMPORTS"
     return 0
   fi
   return 1
+}
+
+# fm_composer_dialog_answered_by: whether pressing <key> on the named dialog
+# records an answer rather than only closing it. Enter confirms the selected
+# row of every recognised dialog. Escape is the picker's harmless cancel, but
+# on the imports dialog it records a decline. Any other key or an unknown
+# dialog counts as answering, so a caller never presses into one it cannot
+# classify.
+fm_composer_dialog_answered_by() {  # <dialog-name> <key>
+  case "$1:$2" in
+    "$FM_COMPOSER_DIALOG_EXIT_PICKER:Escape") return 1 ;;
+  esac
+  return 0
 }
 
 # fm_composer_dialog_shape: whether <screen> holds <heading> alone on a row,

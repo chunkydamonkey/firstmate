@@ -973,6 +973,21 @@ test_lifecycle_verbs_never_answer_the_imports_dialog() {
   pass "fm-control interrupt and exit send no key to Claude's external-imports dialog"
 }
 
+# Escape is the exit picker's harmless cancel, so interrupt still closes it.
+test_interrupt_still_cancels_the_background_picker() {
+  local dir out rc
+  dir=$(new_case picker-interrupt)
+  add_task "$dir" t1 claude
+  alive_as "$dir" claude
+  exit_picker_screen > "$dir/fake/pane"
+  out=$(run_control "$dir" t1 interrupt); rc=$?
+  expect_code 0 "$rc" "interrupt on the background-task exit picker should deliver"$'\n'"$out"
+  [ "$(keys_sent "$dir")" = Escape ] \
+    || fail "interrupt should press Escape once on the picker, got: $(keys_sent "$dir")"
+  assert_not_contains "$out" "blocked on a prompt" "the picker must not refuse an interrupt"
+  pass "fm-control interrupt still cancels the background-task exit picker with Escape"
+}
+
 test_idle_agent_is_not_interrupted() {
   local dir out rc gen
   dir=$(new_case idle)
@@ -1261,6 +1276,7 @@ test_exit_refuses_an_open_background_picker
 test_exit_refuses_the_confirming_enter
 test_exit_names_a_picker_that_renders_after_the_submit
 test_lifecycle_verbs_never_answer_the_imports_dialog
+test_interrupt_still_cancels_the_background_picker
 test_interrupt_without_acknowledgement_preserves_busy_state
 test_muse_interrupt_confirms_adapter_acknowledgement
 test_interrupt_revalidates_agent_after_acknowledgement_wait

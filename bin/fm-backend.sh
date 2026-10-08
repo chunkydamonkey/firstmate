@@ -1027,9 +1027,10 @@ fm_backend_agent_state() {  # <backend> <target>
 # and resumes its agent on its own, and it restores the pane in its top-level
 # shell's directory, which for a spawned worker is the main project copy rather
 # than the worktree its `treehouse get` subshell entered (docs/herdr-backend.md
-# "Agents resumed by a session restore"). Every other backend, kind,
-# unreadable read, and agent-less pane returns 1, so callers keep their
-# existing behaviour there.
+# "Agents resumed by a session restore"). Returns 1 when the task cannot be
+# misplaced this way - every other backend and kind - or when the pane proves
+# its agent is not outside, and 2 when the read proves neither, so a caller
+# never mistakes an unreadable pane for a recovered one.
 fm_backend_task_outside_worktree() {  # <meta-file>
   local meta=$1 kind worktree target
   [ "$(fm_meta_get "$meta" backend)" = herdr ] || return 1
@@ -1037,8 +1038,8 @@ fm_backend_task_outside_worktree() {  # <meta-file>
   case "${kind:-ship}" in ship|scout) ;; *) return 1 ;; esac
   worktree=$(fm_meta_get "$meta" worktree)
   target=$(fm_meta_get "$meta" window)
-  [ -n "$worktree" ] && [ -n "$target" ] || return 1
-  fm_backend_source herdr || return 1
+  [ -n "$worktree" ] && [ -n "$target" ] || return 2
+  fm_backend_source herdr || return 2
   fm_backend_herdr_outside_worktree "$target" "$worktree"
 }
 

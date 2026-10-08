@@ -3842,9 +3842,9 @@ test_task_outside_worktree_reports_only_a_live_agent_outside() {
   out=$(outside "$main" alive); rc=$?
   [ "$rc" -eq 0 ] && [ "$out" = "$main" ] || fail "a live agent in the main copy should be reported with its directory, got rc=$rc '$out'"
   out=$(outside "$main" dead); rc=$?
-  [ "$rc" -eq 1 ] && [ -z "$out" ] || fail "an agent-less restored shell must not be reported, got rc=$rc '$out'"
+  [ "$rc" -eq 1 ] && [ -z "$out" ] || fail "an agent-less restored shell is positively not misplaced, got rc=$rc '$out'"
   out=$(outside "$main" unreadable); rc=$?
-  [ "$rc" -eq 1 ] || fail "an unreadable agent state must not be reported, got rc=$rc"
+  [ "$rc" -eq 2 ] && [ -z "$out" ] || fail "an unreadable agent state proves neither way, got rc=$rc '$out'"
   out=$(outside "$wt/sub" alive); rc=$?
   [ "$rc" -eq 1 ] || fail "a directory beneath the physical worktree is inside it, got rc=$rc '$out'"
   [ ! -e "$dir/probed" ] || fail "an agent inside its worktree should not cost an agent probe"
@@ -3853,7 +3853,7 @@ test_task_outside_worktree_reports_only_a_live_agent_outside() {
   out=$(outside "$dir/pool/wt-other" alive); rc=$?
   [ "$rc" -eq 0 ] || fail "a sibling whose name only starts with the worktree's is outside, got rc=$rc"
   out=$(outside "" alive); rc=$?
-  [ "$rc" -eq 1 ] || fail "an unreadable foreground directory must not be reported, got rc=$rc"
+  [ "$rc" -eq 2 ] || fail "an unreadable foreground directory proves neither way, got rc=$rc"
   : > "$log"
   printf 'window=default:w1:p2\nbackend=herdr\nkind=secondmate\nworktree=%s\n' "$wt" > "$dir/state/s1.meta"
   out=$(outside "$main" alive "$dir/state/s1.meta"); rc=$?
@@ -3862,7 +3862,7 @@ test_task_outside_worktree_reports_only_a_live_agent_outside() {
   out=$(outside "$main" alive "$dir/state/t2.meta"); rc=$?
   [ "$rc" -eq 1 ] || fail "only Herdr restores panes, so other backends are never reported, got rc=$rc"
   [ ! -s "$log" ] || fail "a secondmate or non-Herdr task must not read the pane: $(cat "$log")"
-  pass "fm_backend_task_outside_worktree: reports only a live Herdr ship or scout agent outside its physical worktree"
+  pass "fm_backend_task_outside_worktree: reports only a live Herdr ship or scout agent outside its physical worktree, and an unreadable pane as unknown"
 }
 
 # --- busy_state (semantic agent state) ---------------------------------------

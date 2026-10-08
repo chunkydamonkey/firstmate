@@ -1300,15 +1300,16 @@ HERDR_LAB_HELPER=bin/fm-herdr-lab.sh tests/fm-herdr-restore-misplaced-worker-e2e
 ```
 
 ```text
-ok - a live agent in its worktree subshell is not reported
-ok - a Herdr restore resumes the agent in the main copy the pane was created in
+ok - a live agent in its worktree is not reported, in either shape
+ok - a pane whose top-level shell is in its worktree is restored and resumed in that worktree
+ok - a Herdr restore resumes a subshell-shaped agent in the main copy the pane was created in
 ok - the resumed agent is reported outside its recorded worktree, naming the main copy
 ok - the doorbell types nothing into the misplaced agent and keeps the record
 ok - the watcher surfaces a misplaced worker once and skips its other checks
 ```
 
-The persisted pane directory is the pane's top-level shell directory: a pane whose top-level shell ran `cd` into the worktree persisted the worktree, while a pane whose shell entered the worktree through an interactive subshell persisted the directory it was created in.
-The restored agent pane spawned only once a viewer attached, and it typed `claude --resume <session-id>` into a shell in that persisted directory.
+The persisted pane directory is the pane's top-level shell directory: a pane whose top-level shell ran `cd` into the worktree persisted and resumed in the worktree, which is the shape a spawn now produces by leasing its worktree, while a pane whose shell entered the worktree through an interactive subshell persisted the directory it was created in.
+A restored agent pane spawned only once a viewer attached, and it typed `claude --resume <session-id>` into a shell in that persisted directory.
 
 ### Prune and respawn
 
