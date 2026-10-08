@@ -1425,14 +1425,21 @@ spawn_abort_cleanup() {
   fi
   # A spawn that leased its slot but stopped before its record exists returns
   # the lease, or the pool would keep that slot out of use with no task to tear
-  # it down. No agent has launched before the record is published, so the
-  # return only ends the pane's shell in the slot. --if-lease-holder keeps it
-  # from returning a slot this spawn does not hold.
+  # it down. The return runs only while the project lock that leased the slot is
+  # still held and no agent can be working in the slot (none launched, or its
+  # endpoint was closed); a rollback after launch leaves the lease for the
+  # operator, who closes the agent out first. --if-lease-holder keeps the
+  # return from releasing a slot this spawn does not hold.
   if [ "$SPAWN_SLOT_LEASED" = 1 ] && [ -n "${WT:-}" ] &&
     [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
     SPAWN_SLOT_LEASED=0
-    ( cd "$PROJ_ABS" && treehouse return --force --if-lease-holder "$SPAWN_LEASE_HOLDER" "$WT" >/dev/null ) ||
-      echo "warning: could not return task $ID's leased worktree $WT after the aborted spawn; return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
+    if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ] &&
+      { [ "$SPAWN_LAUNCH_SENT" = 0 ] || [ "$SPAWN_ENDPOINT_CLOSED" = 1 ]; }; then
+      ( cd "$PROJ_ABS" && treehouse return --force --if-lease-holder "$SPAWN_LEASE_HOLDER" "$WT" >/dev/null ) ||
+        echo "warning: could not return task $ID's leased worktree $WT after the aborted spawn; return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
+    else
+      echo "warning: leaving task $ID's leased worktree $WT in place; an agent may still be working there or the Treehouse project lock is no longer held, so close it out and return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
+    fi
   fi
   if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ]; then
     SPAWN_TREEHOUSE_PROJECT_LOCK_HELD=0
@@ -4457,16 +4464,23 @@ elif [ "$KIND" != secondmate ] && [ "$BACKEND" != orca ]; then
   # client's window, which would misread firstmate's OWN pane path as the
   # worktree. Only the exact leased path is accepted, compared physically, so a
   # transient stale read of some other checkout is waited out rather than
-  # adopted.
+  # adopted. A single matching read is not proof the pane settled there, so two
+  # consecutive reads must both report it; any other read restarts the count.
   lease_real=$(real_path_or_raw "$WT")
   last_seen=""
   entered=0
+  matched=0
   for _ in $(seq 1 60); do
     p=$(spawn_current_path "$WT_TARGET" || true)
     [ -z "$p" ] || last_seen="$p"
     if [ -n "$p" ] && [ "$(real_path_or_raw "$p")" = "$lease_real" ]; then
-      entered=1
-      break
+      matched=$((matched + 1))
+      if [ "$matched" -ge 2 ]; then
+        entered=1
+        break
+      fi
+    else
+      matched=0
     fi
     sleep 1
   done

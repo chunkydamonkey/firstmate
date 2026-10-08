@@ -6,7 +6,8 @@
 # On some tmux/WSL setups a brand-new window's pane_current_path transiently
 # reports a stale, unrelated-but-real path on the very first poll, before the
 # pane actually settles into the worktree. That stale path is a real git
-# checkout, just the wrong one, so the wait accepts only the exact leased path.
+# checkout, just the wrong one, so the wait accepts only the exact leased path,
+# and only once two consecutive reads both report it.
 # This test simulates transient-then-settled pane_current_path sequences with a
 # fake tmux and asserts the recorded worktree is the leased one, never the stale
 # read, including a linked spawning home whose pane transiently reports the
@@ -127,7 +128,8 @@ test_single_stale_first_read_is_not_accepted() {
 }
 
 # A pane that reports the leased worktree from the very first read costs that
-# one read plus the launch-boundary cwd check - no extra polling cycle. Counting
+# read, the one confirming read, and the launch-boundary cwd check - no extra
+# polling cycle. Counting
 # the pane reads measures the loop itself; wall-clock time would fold in every
 # other cost of a spawn (fetch, trust registration) and drift with the machine.
 test_already_settled_pane_costs_one_confirm_read() {
@@ -142,10 +144,10 @@ test_already_settled_pane_costs_one_confirm_read() {
   assert_grep "worktree=$WT_DIR" "$HOME_DIR/state/$id.meta" \
     "meta did not record the already-settled worktree"
   reads=$(cat "$COUNTFILE")
-  [ "$reads" -eq 2 ] || fail "already-settled pane took $reads reads - expected the first read and the launch-boundary cwd check"
+  [ "$reads" -eq 3 ] || fail "already-settled pane took $reads reads - expected the first read, one confirming read, and the launch-boundary cwd check"
   grep -qxF "get --lease --lease-holder fm-task:$id" "$COUNTFILE.treehouse" \
     || fail "the spawn did not lease its worktree under its task holder: $(cat "$COUNTFILE.treehouse")"
-  pass "an already-settled pane is accepted on its first read of the leased worktree"
+  pass "an already-settled pane is accepted after one confirming read of the leased worktree"
 }
 
 # make_primary_case <name> <id> <stale_reads> builds the linked-home shape: the
