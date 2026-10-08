@@ -1428,15 +1428,23 @@ spawn_abort_cleanup() {
   # it down. The return runs only while the project lock that leased the slot is
   # still held and no agent can be working in the slot (none launched, or its
   # endpoint was closed); a rollback after launch leaves the lease for the
-  # operator, who closes the agent out first. --if-lease-holder keeps the
+  # operator, who closes the agent out first. An endpoint that is still open
+  # has its top-level shell moved back to the project first, because the return
+  # kills the processes in the worktree: the pane the error names survives for
+  # inspection and no stray shell is left in the returned slot. A pane that
+  # cannot be shown to have left keeps the lease. --if-lease-holder keeps the
   # return from releasing a slot this spawn does not hold.
   if [ "$SPAWN_SLOT_LEASED" = 1 ] && [ -n "${WT:-}" ] &&
     [ ! -e "$STATE/$ID.meta" ] && [ ! -L "$STATE/$ID.meta" ]; then
     SPAWN_SLOT_LEASED=0
     if [ "$SPAWN_TREEHOUSE_PROJECT_LOCK_HELD" = 1 ] &&
       { [ "$SPAWN_LAUNCH_SENT" = 0 ] || [ "$SPAWN_ENDPOINT_CLOSED" = 1 ]; }; then
-      ( cd "$PROJ_ABS" && treehouse return --force --if-lease-holder "$SPAWN_LEASE_HOLDER" "$WT" >/dev/null ) ||
-        echo "warning: could not return task $ID's leased worktree $WT after the aborted spawn; return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
+      if [ "$SPAWN_ENDPOINT_CLOSED" = 1 ] || spawn_abort_leave_worktree; then
+        ( cd "$PROJ_ABS" && treehouse return --force --if-lease-holder "$SPAWN_LEASE_HOLDER" "$WT" >/dev/null ) ||
+          echo "warning: could not return task $ID's leased worktree $WT after the aborted spawn; return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
+      else
+        echo "warning: leaving task $ID's leased worktree $WT in place; window $T could not be moved out of it, so move or close that window, then return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
+      fi
     else
       echo "warning: leaving task $ID's leased worktree $WT in place; an agent may still be working there or the Treehouse project lock is no longer held, so close it out and return it with 'treehouse return --force $WT' from $PROJ_ABS" >&2
     fi
@@ -4046,6 +4054,27 @@ spawn_current_path() { # <target>
   zellij) fm_backend_zellij_current_path "$1" "$W" ;;
   cmux) fm_backend_cmux_current_path "$1" "$W" ;;
   esac
+}
+# Moves an aborted spawn's pane shell back to the project and succeeds only once
+# two consecutive reads place it outside the leased worktree.
+spawn_abort_leave_worktree() {
+  local wt_real p p_real _ left=0
+  spawn_send_text_line "$WT_TARGET" "cd -- $(shell_quote "$PROJ_ABS")" || return 1
+  wt_real=$(real_path_or_raw "$WT")
+  for _ in $(seq 1 10); do
+    p=$(spawn_current_path "$WT_TARGET" || true)
+    p_real=""
+    [ -z "$p" ] || p_real=$(real_path_or_raw "$p")
+    case "$p_real" in
+    "" | "$wt_real" | "$wt_real"/*) left=0 ;;
+    *)
+      left=$((left + 1))
+      [ "$left" -lt 2 ] || return 0
+      ;;
+    esac
+    sleep 1
+  done
+  return 1
 }
 spawn_send_literal() { # <target> <text>
   case "$BACKEND" in
