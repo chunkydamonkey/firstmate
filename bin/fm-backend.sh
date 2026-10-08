@@ -1021,6 +1021,27 @@ fm_backend_agent_state() {  # <backend> <target>
   esac
 }
 
+# fm_backend_task_outside_worktree: print the directory a ship or scout task's
+# live agent runs in, and return 0, only when that directory is provably outside
+# the task's recorded worktree. Herdr is the one backend that restores a pane
+# and resumes its agent on its own, and it restores the pane in its top-level
+# shell's directory, which for a spawned worker is the main project copy rather
+# than the worktree its `treehouse get` subshell entered (docs/herdr-backend.md
+# "Agents resumed by a session restore"). Every other backend, kind,
+# unreadable read, and agent-less pane returns 1, so callers keep their
+# existing behaviour there.
+fm_backend_task_outside_worktree() {  # <meta-file>
+  local meta=$1 kind worktree target
+  [ "$(fm_meta_get "$meta" backend)" = herdr ] || return 1
+  kind=$(fm_meta_get "$meta" kind)
+  case "${kind:-ship}" in ship|scout) ;; *) return 1 ;; esac
+  worktree=$(fm_meta_get "$meta" worktree)
+  target=$(fm_meta_get "$meta" window)
+  [ -n "$worktree" ] && [ -n "$target" ] || return 1
+  fm_backend_source herdr || return 1
+  fm_backend_herdr_outside_worktree "$target" "$worktree"
+}
+
 # Backward-compatible three-state view for existing callers. An
 # authoritatively missing endpoint is confidently not a live agent, while every
 # ambiguous, unreadable, or unverified result stays unknown.

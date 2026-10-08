@@ -32,6 +32,8 @@
 #              an idle agent (Devin's revert picker) sends its later presses
 #              only after the first press rendered a running turn, and
 #              otherwise reports `cancel=not-running` having sent one press.
+#              A screen showing a recognised dialog (fm_composer_blocking_dialog)
+#              is refused before any press, because Escape answers it too.
 #   exit       Stop the agent, preserving its terminal endpoint, worktree, and
 #              every uncommitted change. Interrupts first when the task reads
 #              busy, then submits the harness's exit command. Postcondition:
@@ -408,8 +410,18 @@ require_state_verified_backend() {  # <verb>
 # refuse_blocking_prompt: the screen is a dialog a confirming Enter would
 # answer. Name it and stop. Do not type Escape or an option: both dismiss
 # or choose.
-refuse_blocking_prompt() {  # <dialog-name>
-  die "task $ID is blocked on a prompt: $1. Refusing to type Enter into it."
+refuse_blocking_prompt() {  # <dialog-name> [key]
+  die "task $ID is blocked on a prompt: $1. Refusing to type ${2:-Enter} into it."
+}
+
+# refuse_open_dialog: read the screen once before any lifecycle key and refuse
+# when it shows a recognised dialog, because that key would answer it.
+refuse_open_dialog() {  # <key>
+  : > "$FM_COMPOSER_DIALOG_SINK" \
+    || die "task $ID's dialog check could not be recorded"
+  fm_backend_composer_state "$BACKEND" "$T" "$LABEL" >/dev/null 2>&1 || true
+  [ ! -s "$FM_COMPOSER_DIALOG_SINK" ] \
+    || refuse_blocking_prompt "$(cat "$FM_COMPOSER_DIALOG_SINK")" "$1"
 }
 
 # rendered_matches <ere>: whether any row of the visible viewport matches.
@@ -471,6 +483,7 @@ send_interrupt_keys() {
     || die "harness $HARNESS needs $clear to clear its composer after an interrupt, which the $BACKEND backend cannot deliver; refusing to leave the cancelled prompt where the next submitted line would concatenate onto it"
   [ -z "$arm$hazard" ] || fm_backend_visible_capture_supported "$BACKEND" \
     || die "harness $HARNESS must see its screen between interrupt presses, because a repeated $key on an idle agent opens its revert picker, and the $BACKEND backend has no verified viewport read; refusing to press blind"
+  refuse_open_dialog "$key"
   INTERRUPT_ARMED=yes
   INTERRUPT_HAZARD=none
   while [ "$i" -lt "$repeat" ]; do
